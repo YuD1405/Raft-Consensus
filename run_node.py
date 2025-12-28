@@ -67,13 +67,6 @@ def main():
         print(f"[Node {args.id}] RPC server crashed!")
         traceback.print_exc()
 
-    # ============================
-    # FAILSAFE LOOP (GIỮ PROCESS SỐNG)
-    # ============================
-    print(f"[Node {args.id}] Entering failsafe loop to keep process alive")
-
-    input("Press Enter to exit")
-
 
 if __name__ == "__main__":
     main()

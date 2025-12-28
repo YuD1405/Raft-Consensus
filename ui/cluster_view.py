@@ -13,7 +13,7 @@ def render_cluster_html(nodes):
                 alive = node["process"] is not None
                 state = "RUNNING" if alive else "STOPPED"
 
-                st.markdown(f"### 🧠 Node {node['id']}")
+                st.markdown(f"### Node {node['id']}")
                 st.write(f"Port: {node['port']}")
                 st.write(f"State: {state}")
 
