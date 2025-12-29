@@ -70,6 +70,7 @@ class RaftRPCServer(raft_pb2_grpc.RaftServiceServicer):
         elif mode == "unblock":
             for p in peers:
                 self.node.state.blocked_peers.discard(int(p))
+            self.node.logic.rebuild_state_machine()
             print(f"[PARTITION] Node {self.node.state.node_id} UNBLOCK -> {list(peers)}")
 
         return raft_pb2.PartitionReply(ok=True)

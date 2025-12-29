@@ -2,6 +2,7 @@ import time
 import random
 from threading import Thread
 import os
+import json
 from rpc import raft_pb2
 
 TIME_SCALE = 2.0
@@ -17,7 +18,14 @@ def set_title(title):
 class RaftLogic:
     def __init__(self, node):
         self.node = node
-
+        self.kv_path = f"db/kv_node_{self.node.state.node_id}.json"
+        if os.path.exists(self.kv_path):
+            os.remove(self.kv_path)
+                
+        if not os.path.exists(self.kv_path):
+            with open(self.kv_path, "w") as f:
+                json.dump({}, f)
+                
     def start(self):
         Thread(target=self.election_loop, daemon=True).start()
 
@@ -102,6 +110,7 @@ class RaftLogic:
                 self.replicate_to_peer(peer)
 
             self.advance_commit_index()
+            self.rebuild_state_machine()  
             time.sleep(HEARTBEAT_INTERVAL)
 
     def replicate_to_peer(self, peer: int):
@@ -177,3 +186,45 @@ class RaftLogic:
             # Only commit entries from current term (simplified Raft rule).
             if 0 <= candidate_index < len(state.log) and int(state.log[candidate_index][0]) == int(state.current_term):
                 state.commit_index = int(candidate_index)
+                
+    def apply_committed_entries(self):
+        state = self.node.state
+
+        if state.commit_index <= state.last_applied:
+            return
+
+        with open(self.kv_path, "r") as f:
+            kv = json.load(f)
+
+        while state.last_applied < state.commit_index:
+            state.last_applied += 1
+            term, command = state.log[state.last_applied]
+
+            key = f"{state.node_id}:{state.last_applied}"
+            kv[key] = str(command)
+
+            print(
+                f"[COMMIT] Node {state.node_id} | index={state.last_applied} | value={command}"
+            )
+
+        with open(self.kv_path, "w") as f:
+            json.dump(kv, f, indent=2)
+
+    def rebuild_state_machine(self):
+        state = self.node.state
+
+        print(f"[REBUILD] Node {state.node_id} rebuilding KV from log")
+
+        kv = {}
+
+        for idx in range(0, state.commit_index + 1):
+            if idx < 0 or idx >= len(state.log):
+                continue
+            term, command = state.log[idx]
+            key = f"{state.node_id}:{idx}"
+            kv[key] = str(command)
+
+        with open(self.kv_path, "w") as f:
+            json.dump(kv, f, indent=2)
+
+        state.last_applied = state.commit_index

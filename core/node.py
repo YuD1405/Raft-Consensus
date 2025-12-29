@@ -14,6 +14,7 @@ class RaftNode:
         # Leader volatile state (only meaningful when role == Leader)
         self.next_index = {}
         self.match_index = {}
+        
 
     def start(self):
         print(f"[Node {self.state.node_id}] starting")
@@ -140,7 +141,10 @@ class RaftNode:
         if req.leader_commit is not None:
             self.state.commit_index = min(
                 int(req.leader_commit), last_index)
+            self.logic.apply_committed_entries()
 
+        self.logic.rebuild_state_machine()
+        
         return raft_pb2.AppendEntriesResponse(
             term=self.state.current_term,
             success=True,

@@ -100,8 +100,9 @@ def render_sidebar(cluster):
                     st.session_state.partition["group_a"]
                 )
             else:
-                leader_id = find_leader_in_group(node_ids)
-
+                leader_id = find_leader_in_group(
+                    [n["id"] for n in running_nodes]
+                )
 
             def _submit_to(node_id_to_send: int):
                 node_info = next(
