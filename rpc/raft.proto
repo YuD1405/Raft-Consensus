@@ -8,8 +8,14 @@ service RaftService {
 
   // UI calls
   rpc KillNode(Empty) returns (Empty);
+  rpc DisconnectNode(Empty) returns (Empty);
+  rpc ReconnectNode(Empty) returns (Empty);
   rpc Ping(PingRequest) returns (PingReply);
   rpc GetStatus (StatusRequest) returns (StatusReply);
+  rpc GetLog (Empty) returns (LogReply);
+
+  // Client -> cluster
+  rpc SubmitCommand (ClientCommandRequest) returns (ClientCommandReply);
 }
 
 message Empty {}
@@ -27,11 +33,38 @@ message RequestVoteResponse {
 message AppendEntriesRequest {
   int32 term = 1;
   int32 leader_id = 2;
+  int32 prev_log_index = 3;
+  int32 prev_log_term = 4;
+  repeated LogEntry entries = 5;
+  int32 leader_commit = 6;
 }
 
 message AppendEntriesResponse {
   int32 term = 1;
   bool success = 2;
+  int32 match_index = 3;
+}
+
+message LogEntry {
+  int32 term = 1;
+  string command = 2;
+}
+
+message LogReply {
+  repeated LogEntry entries = 1;
+  int32 commit_index = 2;
+}
+
+message ClientCommandRequest {
+  string command = 1;
+}
+
+message ClientCommandReply {
+  bool accepted = 1;
+  int32 leader_id = 2;
+  int32 term = 3;
+  int32 index = 4;
+  string message = 5;
 }
 
 message StatusRequest {}
@@ -41,6 +74,9 @@ message StatusReply {
   string role = 2;
   int32 term = 3;
   bool alive = 4;
+  bool connected = 5;
+  int32 log_len = 6;
+  int32 commit_index = 7;
 }
 
 message PingRequest {}

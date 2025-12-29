@@ -1,1 +1,5 @@
 streamlit
+grpcio
+grpcio-tools
+protobuf
+pandas
