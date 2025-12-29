@@ -1,5 +1,6 @@
 import time
 
+
 class RaftState:
     def __init__(self, node_id, peers):
         # Persistent
@@ -15,7 +16,10 @@ class RaftState:
         self.node_id = node_id
         self.peers = peers
         self.role = "Follower"
-        self.alive = True
+        self.connected = True
 
         # Timing
         self.last_heartbeat = time.time()
+
+        # Observability
+        self.last_leader_id = 0

@@ -14,14 +14,30 @@ class RaftRPCServer(raft_pb2_grpc.RaftServiceServicer):
     def AppendEntries(self, req, ctx):
         return self.node.on_append_entries(req)
 
+    def DisconnectNode(self, req, ctx):
+        self.node.disconnect()
+        return raft_pb2.Empty()
+
+    def ReconnectNode(self, req, ctx):
+        self.node.reconnect()
+        return raft_pb2.Empty()
+
     def GetStatus(self, request, context):
         state = self.node.state
         return raft_pb2.StatusReply(
             node_id=state.node_id,
             role=state.role,
             term=state.current_term,
-            alive=state.alive
+            connected=state.connected,
+            log_len=len(state.log),
+            commit_index=state.commit_index,
         )
+
+    def GetLog(self, req, ctx):
+        return self.node.get_log_reply()
+
+    def SubmitCommand(self, req, ctx):
+        return self.node.on_submit_command(req)
 
     def KillNode(self, req, ctx):
         print(f"[RPC] Killing node {self.node.state.node_id}")
@@ -49,7 +65,8 @@ def serve(node, port):
     raft_pb2_grpc.add_RaftServiceServicer_to_server(
         RaftRPCServer(node), server
     )
-    server.add_insecure_port(f"[::]:{port}")
+    # Windows setups often fail binding IPv6 [::]; bind IPv4 instead.
+    server.add_insecure_port(f"0.0.0.0:{port}")
     server.start()
     print(f"[RPC] Node {node.state.node_id} on {port}")
 

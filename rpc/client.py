@@ -31,3 +31,19 @@ class RaftRPCClient:
     
     def play_node(self):
         return self.stub.PlayNode(raft_pb2.Empty())
+    def get_log(self):
+        return self.stub.GetLog(raft_pb2.Empty())
+
+    def kill(self):
+        return self.stub.KillNode(raft_pb2.Empty())
+
+    def disconnect(self):
+        return self.stub.DisconnectNode(raft_pb2.Empty())
+
+    def reconnect(self):
+        return self.stub.ReconnectNode(raft_pb2.Empty())
+
+    def submit_command(self, command: str):
+        return self.stub.SubmitCommand(
+            raft_pb2.ClientCommandRequest(command=str(command))
+        )
