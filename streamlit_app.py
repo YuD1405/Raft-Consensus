@@ -1,5 +1,6 @@
 import streamlit as st
 import time
+from streamlit_autorefresh import st_autorefresh
 
 from core.cluster import ClusterManager
 from ui.sidebar import render_sidebar
@@ -7,6 +8,8 @@ from ui.cluster_view import render_cluster_html
 
 st.set_page_config(page_title="Raft Simulator", layout="wide")
 st.title("🛠️ Raft Consensus Simulator")
+
+st_autorefresh(interval=500, key="refresh")
 
 # ============================
 # INIT CLUSTER MANAGER
@@ -29,8 +32,4 @@ st.subheader("Cluster View")
 if not cluster.nodes:
     st.info("Cluster not initialized. Choose node count and start cluster.")
 else:
-    html = render_cluster_html(cluster.nodes)
-    st.components.v1.html(html, height=500)
-
-time.sleep(0.5)
-st.rerun()
+    html = render_cluster_html(cluster)

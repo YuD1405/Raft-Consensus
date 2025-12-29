@@ -8,8 +8,10 @@ service RaftService {
 
   // UI calls
   rpc KillNode(Empty) returns (Empty);
+  rpc PlayNode(Empty) returns (Empty);
   rpc Ping(PingRequest) returns (PingReply);
   rpc GetStatus (StatusRequest) returns (StatusReply);
+  rpc WatchStatus(Empty) returns (stream StatusEvent);
 }
 
 message Empty {}
@@ -37,6 +39,13 @@ message AppendEntriesResponse {
 message StatusRequest {}
 
 message StatusReply {
+  int32 node_id = 1;
+  string role = 2;
+  int32 term = 3;
+  bool alive = 4;
+}
+
+message StatusEvent {
   int32 node_id = 1;
   string role = 2;
   int32 term = 3;

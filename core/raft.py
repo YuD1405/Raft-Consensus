@@ -3,8 +3,9 @@ import random
 from threading import Thread
 import os
 
-ELECTION_TIMEOUT = (5, 10)
-HEARTBEAT_INTERVAL = 1
+TIME_SCALE = 1.0
+ELECTION_TIMEOUT = (5 * TIME_SCALE, 10 * TIME_SCALE)
+HEARTBEAT_INTERVAL = 2 * TIME_SCALE
 
 def set_title(title):
     os.system(f'title "{title}"')
@@ -23,17 +24,18 @@ class RaftLogic:
                 timeout = random.uniform(*ELECTION_TIMEOUT)
                 if time.time() - self.node.state.last_heartbeat > timeout:
                     self.start_election()
-            time.sleep(0.1)
+            time.sleep(0.1* TIME_SCALE)
 
     def start_election(self):
         state = self.node.state
         state.role = "Candidate"
         state.current_term += 1
         state.voted_for = state.node_id
+        state.last_heartbeat = time.time()
         votes = 1
 
         set_title(
-            f"RAFT Node {state.node_id} | CANDIDATE | term={state.current_term}"
+            f"RAFT Node {state.node_id} | CANDIDATE"
         )
         print(f"RAFT Node {state.node_id} | CANDIDATE | term={state.current_term}")
         
@@ -43,6 +45,13 @@ class RaftLogic:
                     term=state.current_term,
                     candidate_id=state.node_id
                 )
+                
+                if resp.term > state.current_term:
+                    state.current_term = resp.term
+                    state.role = "Follower"
+                    state.voted_for = None
+                    return
+                
                 if resp.vote_granted:
                     votes += 1
             except:
@@ -50,21 +59,22 @@ class RaftLogic:
 
         if votes > (len(state.peers) + 1) // 2:
             self.become_leader()
+        else:
+            state.role = "Follower"
+
 
     def become_leader(self):
         self.node.state.role = "Leader"
-        set_title(
-            f"RAFT Node {self.node.state.node_id} | LEADER"
-        )
+        set_title(f"RAFT Node {self.node.state.node_id} | LEADER")
         print(f"RAFT Node {self.node.state.node_id} | LEADER")
-    
+        self.node.state.last_heartbeat = time.time()
         Thread(target=self.heartbeat_loop, daemon=True).start()
 
     def heartbeat_loop(self):
-        while self.node.state.role == "Leader":
+        while (self.node.state.alive and self.node.state.role == "Leader"):
             for peer in self.node.state.peers:
                 try:
-                    print(f"Sent heartbeat to {peer}")
+                    print(f"[Node {self.node.state.node_id}] -> Sent heartbeat to {peer}")
                     self.node.rpc_clients[peer].append_entries(
                         term=self.node.state.current_term,
                         leader_id=self.node.state.node_id

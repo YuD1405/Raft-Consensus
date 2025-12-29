@@ -6,7 +6,7 @@ class RaftRPCClient:
     def __init__(self, addr):
         channel = grpc.insecure_channel(addr)
         self.stub = raft_pb2_grpc.RaftServiceStub(channel)
-        
+    
     def ping(self, timeout=1.0):
         try:
             res = self.stub.Ping(
@@ -26,5 +26,8 @@ class RaftRPCClient:
     def get_status(self):
         return self.stub.GetStatus(raft_pb2.StatusRequest())
 
-    def kill(self):
+    def kill_node(self):
         return self.stub.KillNode(raft_pb2.Empty())
+    
+    def play_node(self):
+        return self.stub.PlayNode(raft_pb2.Empty())

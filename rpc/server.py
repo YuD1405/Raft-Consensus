@@ -24,9 +24,18 @@ class RaftRPCServer(raft_pb2_grpc.RaftServiceServicer):
         )
 
     def KillNode(self, req, ctx):
+        print(f"[RPC] Killing node {self.node.state.node_id}")
         self.node.state.alive = False
+        # self.node.shutdown()
         return raft_pb2.Empty()
     
+    def PlayNode(self, req, ctx):
+        print(f"[RPC] Continuing node {self.node.state.node_id}")
+        self.node.state.alive = True
+        # self.node.shutdown()
+        return raft_pb2.Empty()
+
+
     def Ping(self, request, context):
         print(f"[RPC] Node {self.node.state.node_id} received Ping!")
         return raft_pb2.PingReply(
@@ -36,6 +45,7 @@ class RaftRPCServer(raft_pb2_grpc.RaftServiceServicer):
 
 def serve(node, port):
     server = grpc.server(futures.ThreadPoolExecutor(10))
+    node.server = server
     raft_pb2_grpc.add_RaftServiceServicer_to_server(
         RaftRPCServer(node), server
     )
