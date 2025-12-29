@@ -17,6 +17,7 @@ class RaftState:
         self.peers = peers
         self.role = "Follower"
         self.connected = True
+        self.blocked_peers = set()
 
         # Timing
         self.last_heartbeat = time.time()

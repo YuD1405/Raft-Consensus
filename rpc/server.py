@@ -57,6 +57,23 @@ class RaftRPCServer(raft_pb2_grpc.RaftServiceServicer):
         return raft_pb2.PingReply(
             message=f"Node {self.node.state.node_id} alive"
         )
+    
+    def Partition(self, req, ctx):
+        peers = req.peers
+        mode = req.mode
+
+        if mode == "block":
+            for p in peers:
+                self.node.state.blocked_peers.add(int(p))
+            print(f"[PARTITION] Node {self.node.state.node_id} BLOCK -> {list(peers)}")
+
+        elif mode == "unblock":
+            for p in peers:
+                self.node.state.blocked_peers.discard(int(p))
+            print(f"[PARTITION] Node {self.node.state.node_id} UNBLOCK -> {list(peers)}")
+
+        return raft_pb2.PartitionReply(ok=True)
+
 
 
 def serve(node, port):

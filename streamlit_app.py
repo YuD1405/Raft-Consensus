@@ -6,10 +6,10 @@ from core.cluster import ClusterManager
 from ui.sidebar import render_sidebar
 from ui.cluster_view import render_cluster_html, render_log_table
 
-st.set_page_config(page_title="Raft Simulator", layout="wide")
-st.title("🛠️ Raft Consensus Simulator")
+st.set_page_config(page_title="Raft Consensus", layout="wide")
+st.title("🛠️ Raft Consensus")
 
-st_autorefresh(interval=1000, key="refresh")
+st_autorefresh(interval=500, key="refresh")
 
 # ============================
 # INIT CLUSTER MANAGER

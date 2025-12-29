@@ -43,6 +43,13 @@ class RaftRPCClient:
     def reconnect(self):
         return self.stub.ReconnectNode(raft_pb2.Empty())
 
+    def partition(self, peers, mode):
+        req = raft_pb2.PartitionRequest(
+            peers=[int(p) for p in peers],
+            mode=mode
+        )
+        return self.stub.Partition(req)
+
     def submit_command(self, command: str):
         return self.stub.SubmitCommand(
             raft_pb2.ClientCommandRequest(command=str(command))

@@ -16,11 +16,34 @@ def render_cluster_html(cluster):
     MAX_COLS = 4
 
     nodes = cluster.nodes
+    partition = st.session_state.get("partition", {"active": False})
+
+    if partition.get("active"):
+        group_a = partition.get("group_a", [])
+        group_b = partition.get("group_b", [])
+
+        id_to_node = {n["id"]: n for n in nodes}
+
+        ordered_nodes = []
+        for nid in group_a:
+            if nid in id_to_node:
+                ordered_nodes.append(id_to_node[nid])
+        for nid in group_b:
+            if nid in id_to_node:
+                ordered_nodes.append(id_to_node[nid])
+
+        nodes = ordered_nodes
+    
     msg_box = st.empty()
     msg_box.text("Status messages will appear here...")
 
-    nodes = cluster.nodes
+    if partition.get("active"):
+        st.subheader("🟢 Group A")
+        
     for i in range(0, len(nodes), MAX_COLS):
+        if partition.get("active") and i >= len(group_a) and i - MAX_COLS < len(group_a):
+            st.divider()
+            st.subheader("🟣 Group B")
         cols = st.columns(MAX_COLS)
 
         for col, node in zip(cols, nodes[i:i + MAX_COLS]):

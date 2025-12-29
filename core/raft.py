@@ -46,6 +46,10 @@ class RaftLogic:
             f"RAFT Node {state.node_id} | CANDIDATE | term={state.current_term}")
 
         for peer in state.peers:
+            if peer in self.node.state.blocked_peers:
+                print(f"[DROP] RequestVote -> Node {peer}")
+                continue
+
             try:
                 resp = self.node.rpc_clients[peer].request_vote(
                     term=state.current_term,
@@ -66,7 +70,8 @@ class RaftLogic:
             except:
                 pass
 
-        if votes > (len(state.peers) + 1) // 2:
+        effective_nodes = len(state.peers) + 1 - len(state.blocked_peers)
+        if votes > effective_nodes // 2:
             self.become_leader()
         else:
             state.role = "Follower"
@@ -104,6 +109,10 @@ class RaftLogic:
         if state.role != "Leader":
             return
 
+        if peer in self.node.state.blocked_peers:
+            print(f"[DROP] AppendEntries -> Node {peer}")
+            return
+    
         next_idx = int(self.node.next_index.get(peer, len(state.log)))
         prev_idx = next_idx - 1
         prev_term = 0

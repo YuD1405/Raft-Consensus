@@ -2,7 +2,11 @@ syntax = "proto3";
 
 package raft;
 
+
 service RaftService {
+
+  rpc Partition(PartitionRequest) returns (PartitionReply);
+
   rpc RequestVote(RequestVoteRequest) returns (RequestVoteResponse);
   rpc AppendEntries(AppendEntriesRequest) returns (AppendEntriesResponse);
 
@@ -90,4 +94,13 @@ message PingRequest {}
 
 message PingReply {
   string message = 1;
+}
+
+message PartitionRequest {
+  repeated int32 peers = 1;
+  string mode = 2; // "block" | "unblock"
+}
+
+message PartitionReply {
+  bool ok = 1;
 }

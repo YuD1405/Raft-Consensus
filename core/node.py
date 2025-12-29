@@ -31,6 +31,9 @@ class RaftNode:
         self.state.connected = True
         self.state.last_heartbeat = time.time()
 
+    def is_blocked(self, peer_id: int) -> bool:
+        return peer_id in self.state.blocked_peers
+    
     def append_local_log(self, command: str) -> int:
         
             entry = (int(self.state.current_term), str(command))
