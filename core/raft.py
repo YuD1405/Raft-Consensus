@@ -48,6 +48,9 @@ class RaftLogic:
                 
                 if resp.term > state.current_term:
                     state.current_term = resp.term
+                    set_title(
+                        f"RAFT Node {state.node_id} | FOLLOWER"
+                    )
                     state.role = "Follower"
                     state.voted_for = None
                     return
@@ -61,6 +64,9 @@ class RaftLogic:
             self.become_leader()
         else:
             state.role = "Follower"
+            set_title(
+                f"RAFT Node {state.node_id} | FOLLOWER"
+            )
 
 
     def become_leader(self):
