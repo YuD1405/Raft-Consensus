@@ -1,180 +1,84 @@
-# Raft Consensus Simulator
+# Raft-based Distributed System Simulator
 
-## 1. Giới thiệu
+## Giới thiệu
+Dự án này triển khai một **mô phỏng hệ thống phân tán dựa trên thuật toán Raft** nhằm minh họa cơ chế **leader election, log replication, fault tolerance và network partition**.  
+Hệ thống được xây dựng phục vụ mục đích **học tập, nghiên cứu và demo**, tập trung vào việc hiểu rõ bản chất hoạt động của Raft hơn là tối ưu hiệu năng.
 
-**Raft Consensus Simulator** là một ứng dụng mô phỏng thuật toán đồng thuận **RAFT** trong môi trường mạng ngang hàng (peer-to-peer).  
-Hệ thống được thiết kế theo kiến trúc **tách biệt rõ ràng giữa tầng xử lý consensus và tầng giao diện**, giúp phản ánh đúng cách một hệ thống phân tán thực tế hoạt động.
+## Mục tiêu
+- Hiểu và hiện thực hóa thuật toán **Raft Consensus**
+- Mô phỏng các tình huống thực tế:
+  - Node crash / restart
+  - Leader election
+  - Network partition & heal
+- Quan sát sự **nhất quán dữ liệu (consistency)** giữa các node
+- Kết nối **Backend – Frontend** để hiển thị trạng thái hệ thống theo thời gian thực
 
-- Các **RAFT node** chạy độc lập dưới dạng **process riêng**
-- Các node **giao tiếp trực tiếp với nhau qua RPC**
-- **Streamlit** chỉ đóng vai trò **UI quan sát và điều khiển**, không tham gia vào quá trình đồng thuận
+## Kiến trúc tổng quát
+Hệ thống gồm 3 thành phần chính:
 
----
+- **Raft Node (Backend)**  
+  - Mỗi node chạy độc lập
+  - Giao tiếp qua RPC
+  - Duy trì state: `Follower / Candidate / Leader`
+  - Quản lý log, term, commit index
 
-## 2. Kiến trúc tổng thể
+- **Cluster / Partition Layer**  
+  - Giả lập phân mảnh mạng (partition)
+  - Cho phép tách – gộp các nhóm node
+  - Kiểm tra hành vi hệ thống khi mất kết nối
 
-```
+- **UI / Frontend**  
+  - Hiển thị trạng thái các node
+  - Theo dõi leader hiện tại, term, log
+  - Nhận tín hiệu cập nhật từ backend (event-based)
 
-+--------------------+
-|    Streamlit UI    |
-|     (Observer)     |
-+----------+---------+
-|
-| Status 
-v
-+--------------------+
-|    Raft Node 1     | <---- RPC ----> Raft Node 2
-|  (Leader/Follower) | <---- RPC ----> Raft Node 3
-+--------------------+ <---- RPC ----> Raft Node 4
-^
-| 
-RPC
-| 
-+--------------------+
-|    Raft Node N     |
-+--------------------+
+## Các chức năng chính
+- Leader Election theo Raft
+- Heartbeat & timeout
+- Log replication & commit
+- Mô phỏng kill / revive node
+- Network partition & heal
+- Đồng bộ trạng thái sau khi merge partition
 
-```
+## Công nghệ sử dụng
+- **Ngôn ngữ**: Python  
+- **Concurrency**: Threading  
+- **Giao tiếp**: RPC / gRPC (Protocol Buffers)  
+- **Frontend**: UI đơn giản để visualize trạng thái hệ thống  
+- **Môi trường**: Local simulation
 
-### Phân tách trách nhiệm
-
-| Thành phần | Vai trò |
-|----------|--------|
-| Raft Node | Thực hiện bầu leader, replicate log, commit |
-| RPC Node ↔ Node | RequestVote, AppendEntries, Heartbeat |
-| Streamlit | Hiển thị trạng thái & mô phỏng lỗi |
-| RPC UI ↔ Node | Lấy trạng thái, kill node, partition |
-
-**Streamlit không phải là một node RAFT**.
-
----
-
-## 3. Công nghệ sử dụng
-
-- **gRPC** cho giao tiếp RPC
-- **Streamlit** cho giao diện mô phỏng
-- **Multiprocessing / Subprocess** để chạy nhiều node trên **1 máy**
-
----
-
-## 4. Cấu trúc thư mục
-
-```
-
-raft/
-│
-├── core/
-│   ├── node.py            # Raft Node implementation
-│   ├── raft.py            # Core Raft logic (leader election, log replication)
-│   ├── state.py           # Node state & persistent data
-│   ├── cluster.py         # Cluster manager (spawn nodes)
-│   └── ...         
-|
-├── rpc/
-│   ├── raft.proto
-│   ├── raft_pb2.py
-│   ├── raft_pb2_grpc.py
-│   ├── server.py          # RPC server for each node
-│   └── client.py          # RPC client utilities
-│
-├── ui/
-│   ├── sidebar.py         # Streamlit sidebar controls
-│   ├── cluster_view.py    # HTML visualization
-│   └── utils/          
-│
-├── streamlit_app.py       # Streamlit entry point
-├── run_node.py            # Init a Raft Node
-├── requirements.txt
-└── README.md
-
-```
-
----
-
-## 5. Cách cài đặt
-
-### 5.1 Tạo môi trường ảo
-
+## Cách chạy chương trình
+### Cài đặt môi trường
+1. Clone repository:
 ```bash
-python -m venv venv
-source venv/bin/activate
+git clone https://github.com/YuD1405/Raft-Consensus.git
+cd Raft-Consensus
 ```
 
-### 5.2 Cài đặt thư viện
-
+2. Cài đặt các thư viện cần thiết:
 ```bash
 pip install -r requirements.txt
 ```
 
----
-
-## 6. Chạy hệ thống
-
-### 6.1 Khởi động các Raft node
-
-Mỗi node chạy như **một process riêng**:
-
+3. Chạy hệ thống
+Khởi động giao diện mô phỏng bằng Streamlit:
 ```bash
-python run_node.py --id 1 --port 5001
-python run_node.py --id 2 --port 5002
-python run_node.py --id 3 --port 5003
-...
+streamlit run main.py
 ```
 
----
+4. Khởi tạo các Raft node
+5. Chạy backend cho từng node
+6. Khởi động frontend để theo dõi trạng thái
+7. Thực hiện các thao tác:
+   - Kill node
+   - Gưi request từ Client
+   - Tạo partition
+   - Heal network
+   - Ghi log mới và quan sát quá trình commit
+  
 
-### 6.2 Chạy Streamlit UI
-
-```bash
-streamlit run streamlit_app.py
-```
-
-Mở trình duyệt tại:
-
-```
-http://localhost:<PORT>
-```
-
----
-
-## 7. Các chức năng cài đặt
-
-### 7.1 Leader Election
-
-* RequestVote RPC
-* Timeout ngẫu nhiên
-* Xử lý xung đột bầu leader
-
-### 7.2 Log Replication
-
-* AppendEntries
-* Đồng bộ log giữa leader và follower
-* Commit khi đạt đa số
-
-### 7.3 Mô phỏng lỗi
-
-| Tình huống        | Mô tả                                     |
-| ----------------- | ----------------------------------------- |
-| Leader crash      | Kill leader → cluster tự bầu leader mới   |
-| Node crash        | Node offline → khi online lại sẽ sync log |
-| Network partition | Chia cluster thành 2 nhóm                 |
-| Heal network      | Kết nối lại, đảm bảo consistency          |
-
-### 7.4 Visualization
-
-* Màu sắc thể hiện vai trò node
-* Hiển thị term, commit index
-* Realtime update qua polling RPC
-
----
-
-## 8. Streamlit có vai trò gì?
-
-* ❌ Không tham gia consensus
-* ❌ Không trung gian message giữa các node
-* ✅ Quan sát trạng thái cluster
-* ✅ Gửi lệnh điều khiển (kill, partition, heal)
-
-> Nếu Streamlit dừng, cluster RAFT vẫn tiếp tục hoạt động bình thường.
-
----
+## Kết quả đạt được
+- Hệ thống bầu leader đúng theo Raft
+- Đảm bảo **Leader Completeness** và **Log Matching**
+- Khi heal partition, dữ liệu được đồng bộ dựa trên log hợp lệ
+- UI phản ánh đúng trạng thái hệ thống theo thời gian thực
